@@ -1,3 +1,5 @@
+// UPDATED 05/07/2021 - touch controls
+
 /**********************************************
 * UTILS
 **********************************************/
@@ -181,6 +183,8 @@ Camera.attributes.add('maxElevation', {
 
 // initialize code called once per entity
 Camera.prototype.initialize = function () {
+  this.prevTouch = {};
+  this.prevPinch = 0;
   this.viewPos = new pc.Vec3();
   this.targetViewPos = new pc.Vec3();
   this.tempVec = new pc.Vec3();
@@ -199,6 +203,11 @@ Camera.prototype.initialize = function () {
 
   this.app.mouse.on(pc.EVENT_MOUSEMOVE, this.onMouseMove, this);
   this.app.mouse.on(pc.EVENT_MOUSEWHEEL, this.onMouseWheel, this);
+  if (this.app.touch) {
+    this.app.touch.on(pc.EVENT_TOUCHSTART, this.onTouchStart, this);
+    this.app.touch.on(pc.EVENT_TOUCHMOVE, this.onTouchMove, this);
+    this.app.touch.on(pc.EVENT_TOUCHEND, this.onTouchEnd, this);
+  }
 };
 
 Camera.prototype.dolly = function (movez) {
@@ -219,6 +228,49 @@ Camera.prototype.onMouseWheel = function (event) {
 Camera.prototype.onMouseMove = function (event) {
   if (event.buttons[pc.MOUSEBUTTON_LEFT])
   this.orbit(event.dx * 0.2, event.dy * 0.2);
+};
+
+Camera.prototype.updatePrevTouch = function (event) {
+  event.touches.forEach(touch => {
+    this.prevTouch[touch.id] = {
+      x: touch.x,
+      y: touch.y };
+
+  });
+};
+
+Camera.prototype.getPinch = function (event) {
+  if (event.touches.length === 2) {
+    const [a, b] = event.touches;
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    return d;
+  } else {
+    return 0;
+  }
+};
+
+Camera.prototype.onTouchStart = function (event) {
+  this.updatePrevTouch(event);
+  this.prevPinch = this.getPinch(event);
+};
+
+Camera.prototype.onTouchMove = function (event) {
+  if (event.touches.length === 1) {
+    const [touch] = event.touches;
+    const prev = this.prevTouch[touch.id];
+    const dx = touch.x - prev.x;
+    const dy = touch.y - prev.y;
+    this.orbit(dx * 0.2, dy * 0.2);
+  } else if (event.touches.length === 2) {
+    const d = this.getPinch(event);
+    const move = d - this.prevPinch;
+    this.dolly(move * -.0125);
+    this.prevPinch = d;
+  }
+
+  this.updatePrevTouch(event);
 };
 
 // update code called every frame
@@ -580,3 +632,4 @@ light.setPosition(2.732, 1.035, 2.732);
 light.setEulerAngles(75, 45, 0);
 
 app.root.addChild(light);
+
