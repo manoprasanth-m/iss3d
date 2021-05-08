@@ -72,7 +72,7 @@ app.assets.add(sphereModel);
 app.assets.load(sphereModel);
 
 /**********************************************
-* SCRIPT: LOADING MANAGER
+* SCRIPT: LOADING MANAGER.
 * ---------------------------------------------
 * rotate entity based on a speed attribute
 **********************************************/
